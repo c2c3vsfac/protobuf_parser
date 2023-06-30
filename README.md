@@ -27,6 +27,18 @@ byte_str = b'J\x05H\xca\xe6\xb1\x03'
 result:bytes = dll.parser(c_char_p(byte_str), c_int(len(byte_str)), c_char_p("117".encode("ascii")))
 index = result.rfind(b"}")
 
-result = result[:index+1].decode()
-dict_result = json.loads(result)
+str_result = result[:index+1].decode()
+dict_result = json.loads(str_result)
+```
+
+# 其他
+
+parser函数是没有内存泄漏吗，还是说下面这个释放内存的代码写的不对
+```c++
+void free_memory(const char* memory) {
+    delete[] memory;
+}
+```
+```python
+dll.free_memory(c_char_p(result))
 ```
