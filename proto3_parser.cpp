@@ -94,7 +94,7 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
         }
     }
     int i = 0;
-    while (i < byte_str.length() - 1){ 
+    while (i < byte_str.length()){ 
         int data_type;
         std::string data_id;
         uint8_t offset;
@@ -186,7 +186,7 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                         repeated_prop_names["1"] = "1";
                         
                         Json::Value decode_repeated_data(Json::arrayValue);
-                        while (j < i + length - 1) {
+                        while (j < i + length) {
                             // std::cout << Base64::base64_encode(byte_str.c_str(), byte_str.size()) << std::endl;
                             std::pair<int, Json::Value> repeated_data = std::get<std::pair<int, Json::Value>>(parse(byte_str.substr(j, length), packet_id, 3, repeated_encoding_rules, repeated_prop_names));
                             int repeated_offset = repeated_data.first;
@@ -213,12 +213,10 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                             map_data["second"] = 0;
                         }
                         if (!decode_data.isMember(prop_name)) {
-                            decode_data[prop_name] = Json::Value(Json::arrayValue);
+                            decode_data[prop_name] = Json::Value(Json::objectValue);
                         }
                         Json::Value prop_array = decode_data[prop_name];
-                        Json::Value map_entry;
-                        map_entry[map_data["first"].asString()] = map_data["second"]; // 还可能有整型
-                        prop_array.append(map_entry);
+                        prop_array[map_data["first"].asString()] = map_data["second"]; // 还可能有整型
                         decode_data[prop_name] = prop_array;
                     }
                     else if (encoding_rules[data_id].isMember("repeated")){
@@ -255,6 +253,10 @@ void init(){
     for (auto& key : ucn.getMemberNames()) {
         all_serial[key] = ucn[key];
     }
+}
+
+void free_memory(const char* memory) {
+    delete[] memory;
 }
 
 const char* parser(const char* byte_str, int length, const char* packet_id) {
