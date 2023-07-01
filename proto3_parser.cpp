@@ -114,21 +114,29 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                 std::pair<uint64_t, uint8_t> varint_res = varint(i, byte_str.c_str());
                 uint64_t data = varint_res.first;
                 offset = varint_res.second;
-                std::string encode_type = encoding_rules[data_id].asString();
-                if (encode_type == "bool") {
-                    decode_data[prop_names[data_id].asString()] = bool(data);
-                }
-                else if (encode_type == "enum") {
-                    Json::Value enum_encoding_rules = prop_names[data_id];
-                    std::string enum_name = enum_encoding_rules.begin().name();
-                    Json::Value enum_prop = *enum_encoding_rules.begin();
-                    decode_data[enum_name] = enum_prop[std::to_string(data)].asString();
+                if (encoding_rules[data_id].isArray()) {
+                    if (encoding_rules[data_id][0].asString() == "enum") {
+                        Json::Value enum_encode = encoding_rules[data_id][1];
+                        decode_data[prop_names[data_id].asString()] = enum_encode[std::to_string(data)].asString();
+                    }
                 }
                 else {
-                    decode_data[prop_names[data_id].asString()] = data;
+                    std::string encode_type = encoding_rules[data_id].asString();
+                    if (encode_type == "bool") {
+                        decode_data[prop_names[data_id].asString()] = bool(data);
+                    }
+                    else if (encode_type == "enum") {
+                        Json::Value enum_encoding_rules = prop_names[data_id];
+                        std::string enum_name = enum_encoding_rules.begin().name();
+                        Json::Value enum_prop = *enum_encoding_rules.begin();
+                        decode_data[enum_name] = enum_prop[std::to_string(data)].asString();
+                    }
+                    else {
+                        decode_data[prop_names[data_id].asString()] = data;
+                    }
+                    i += offset;
+                    i += 1;
                 }
-                i += offset;
-                i += 1;
             }
             else if (data_type == 1){
                 std::string encode_type = encoding_rules[data_id].asString();
@@ -170,19 +178,31 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                 i += 1;
                 if (encoding_rules[data_id].isString()){
                     std::string encode_type = encoding_rules[data_id].asString();
-                    std::string prop_name = prop_names[data_id].asString();
+                    std::string prop_name;
                     if (encode_type == "string") {
+                        prop_name = prop_names[data_id].asString();
                         decode_data[prop_name] = byte_str.substr(i, length);
                     }
                     else if (encode_type == "bytes") {
-                         decode_data[prop_name] = Base64::base64_encode(byte_str.substr(i, length).c_str(), byte_str.substr(i, length).size());
+                        prop_name = prop_names[data_id].asString();
+                        decode_data[prop_name] = Base64::base64_encode(byte_str.substr(i, length).c_str(), byte_str.substr(i, length).size());
                     }
                     else if (encode_type.starts_with("repeated_")) {
                         std::string data_type = encode_type.substr(9); // repeated_
                         int j = i;
                         Json::Value repeated_encoding_rules;
                         Json::Value repeated_prop_names;
-                        repeated_encoding_rules["1"] = data_type;
+                        Json::Value enum_encoding_rules;
+                        if (data_type == "enum") {
+                            prop_name = prop_names[data_id][0].asString();
+                            repeated_encoding_rules["1"] = "uint32";
+                            enum_encoding_rules = prop_names[data_id][1];
+                        }
+                        else
+                        {   
+                            prop_name = prop_names[data_id].asString();
+                            repeated_encoding_rules["1"] = data_type;
+                        }
                         repeated_prop_names["1"] = "1";
                         
                         Json::Value decode_repeated_data(Json::arrayValue);
@@ -191,6 +211,9 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                             std::pair<int, Json::Value> repeated_data = std::get<std::pair<int, Json::Value>>(parse(byte_str.substr(j, length), packet_id, 3, repeated_encoding_rules, repeated_prop_names));
                             int repeated_offset = repeated_data.first;
                             Json::Value repeated_data_value = repeated_data.second["1"];
+                            if (data_type == "enum") {
+                                repeated_data_value = enum_encoding_rules[repeated_data_value.asString()];
+                            }
                             decode_repeated_data.append(repeated_data_value);
                             j += repeated_offset;
                         }
