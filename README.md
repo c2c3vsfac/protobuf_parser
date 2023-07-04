@@ -18,24 +18,24 @@
 ```python
 from ctypes import cdll, c_int, c_char_p
 import json
+import os
 
-dll = cdll.LoadLibrary(".\\Parser.dll")
+current_path = os.path.dirname(os.path.abspath(__file__))
+dll = cdll.LoadLibrary(current_path + "/Parser.dll")
 
 dll.parser.restype = c_char_p
 
 byte_str = b'J\x05H\xca\xe6\xb1\x03'
 result:bytes = dll.parser(c_char_p(byte_str), c_int(len(byte_str)), c_char_p("117".encode("ascii")))
-index = result.rfind(b"}")
-
-str_result = result[:index+1].decode()
+str_result = result.decode()
 dict_result = json.loads(str_result)
 ```
 
 # 其他
 
-parser函数是没有内存泄漏吗，还是说下面这个释放内存的代码写的不对
+奇了怪了，c++自己调没问题，python用就不行
 ```c++
-void free_memory(const char* memory) {
+void free_memory(char* memory) {
     delete[] memory;
 }
 ```
