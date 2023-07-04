@@ -29,6 +29,6 @@ byte_str = b'J\x05H\xca\xe6\xb1\x03'
 result:bytes = dll.parser(c_char_p(byte_str), c_int(len(byte_str)), c_char_p("117".encode("ascii")))
 str_result = result.decode()
 dict_result = json.loads(str_result)
-dll.free_memory(c_char_p(result))
+# dll.free_memory(c_char_p(result))
 ```
 
