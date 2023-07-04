@@ -238,9 +238,7 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                         if (!decode_data.isMember(prop_name)) {
                             decode_data[prop_name] = Json::Value(Json::objectValue);
                         }
-                        Json::Value prop_array = decode_data[prop_name];
-                        prop_array[map_data["first"].asString()] = map_data["second"]; // 还可能有整型
-                        decode_data[prop_name] = prop_array;
+                        decode_data[prop_name][map_data["first"].asString()] = map_data["second"];
                     }
                     else if (encoding_rules[data_id].isMember("repeated")){
                         std::string prop_name = prop_names[data_id].asString();
@@ -250,9 +248,7 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                         if (!decode_data.isMember(prop_name)) {
                             decode_data[prop_name] = Json::Value(Json::arrayValue);
                         }
-                        Json::Value prop_array = decode_data[prop_name];
-                        prop_array.append(repeat_data);
-                        decode_data[prop_name] = prop_array;
+                        decode_data[prop_name].append(repeat_data);
                     }
                 }
                 else if (encoding_rules[data_id].isArray()) {
@@ -280,7 +276,7 @@ void init(){
     }
 }
 
-void free_memory(const char* memory) {
+void free_memory(char* memory) {
     delete[] memory;
 }
 
