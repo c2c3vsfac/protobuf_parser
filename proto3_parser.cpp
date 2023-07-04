@@ -205,19 +205,26 @@ std::variant<Json::Value, std::pair<int, Json::Value>> parse(const std::string& 
                         }
                         repeated_prop_names["1"] = "1";
                         
-                        Json::Value decode_repeated_data(Json::arrayValue);
-                        while (j < i + length) {
-                            // std::cout << Base64::base64_encode(byte_str.c_str(), byte_str.size()) << std::endl;
-                            std::pair<int, Json::Value> repeated_data = std::get<std::pair<int, Json::Value>>(parse(byte_str.substr(j, length), packet_id, 3, repeated_encoding_rules, repeated_prop_names));
-                            int repeated_offset = repeated_data.first;
-                            Json::Value repeated_data_value = repeated_data.second["1"];
-                            if (data_type == "enum") {
-                                repeated_data_value = enum_encoding_rules[repeated_data_value.asString()];
-                            }
-                            decode_repeated_data.append(repeated_data_value);
-                            j += repeated_offset;
+                        if (!decode_data.isMember(prop_name)) {
+                            decode_data[prop_name] = Json::Value(Json::arrayValue);
                         }
-                        decode_data[prop_name] = decode_repeated_data;
+                        if (data_type == "string") {
+                            std::string sub_str = byte_str.substr(j, length);
+                            decode_data[prop_name].append(sub_str);
+                        }
+                        else
+                        {
+                            while (j < i + length) {
+                                std::pair<int, Json::Value> repeated_data = std::get<std::pair<int, Json::Value>>(parse(byte_str.substr(j, length), packet_id, 3, repeated_encoding_rules, repeated_prop_names));
+                                int repeated_offset = repeated_data.first;
+                                Json::Value repeated_data_value = repeated_data.second["1"];
+                                if (data_type == "enum") {
+                                    repeated_data_value = enum_encoding_rules[repeated_data_value.asString()];
+                                }
+                                decode_data[prop_name].append(repeated_data_value);
+                                j += repeated_offset;
+                            }
+                        }
                     }
                 }
                 else if (encoding_rules[data_id].isObject()) {
