@@ -3,6 +3,6 @@
 #define PARSER_API extern "C" _declspec(dllimport)
 #endif
 
-#include <json/json.h>
+PARSER_API char* parser(char* byte_str, int length, const char* packet_id);
 
-PARSER_API const char* parser(const char* byte_str, int length, const char* packet_id);
+PARSER_API void free_memory(char* memory);
